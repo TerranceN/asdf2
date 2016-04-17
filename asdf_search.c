@@ -71,6 +71,32 @@ char* loadHistoryData(int* numLines) {
   return history_data;
 }
 
+void renderScreen(char* input, int cursor, int selected, char* lines, bool* renderLine, int numLines) {
+  clear();
+
+  int max_y;
+  int max_x;
+  getmaxyx(stdscr, max_y, max_x);
+
+  mvprintw(0, 0, input);
+
+  for (int i = 0; i < max_x; i++) {
+    mvprintw(1, i, "-");
+  }
+
+  int line = 2;
+  for (int i = numLines; i >= 0 && line < 50; i--) {
+    mvprintw(line, 0, " ");
+    if (renderLine[i]) {
+      mvprintw(line, 1, lines+i*MAX_HISTORY_LINE_SIZE);
+      line++;
+    }
+  }
+  mvprintw(selected+2, 0, ">");
+
+  move(0, cursor);
+}
+
 int main(int argc, char** argv) {
   int result = 0;
   initscr();
@@ -87,9 +113,14 @@ int main(int argc, char** argv) {
   int numLines;
   char* historyData = loadHistoryData(&numLines);
 
+  bool* renderLine = malloc(numLines*sizeof(bool));
+  memset(renderLine, 0, numLines*sizeof(bool));
+
   int selected = 0;
 
   bool runCommand = false;
+
+  renderScreen(input, cursor, selected, historyData, renderLine, numLines);
 
   while(!runCommand) {
     int c = getch();
@@ -173,29 +204,15 @@ int main(int argc, char** argv) {
         break;
     }
 
-    clear();
-
-    int max_y;
-    int max_x;
-    getmaxyx(stdscr, max_y, max_x);
-
-    mvprintw(0, 0, input);
-
-    for (int i = 0; i < max_x; i++) {
-      mvprintw(1, i, "-");
-    }
-
-    int line = 2;
-    for (int i = numLines; i >= 0 && line < 50; i--) {
-      mvprintw(line, 0, " ");
+    for (int i = numLines; i >= 0; i--) {
       if (strstr(historyData+i*MAX_HISTORY_LINE_SIZE, input) != NULL) {
-        mvprintw(line, 1, historyData+i*MAX_HISTORY_LINE_SIZE);
-        line++;
+        renderLine[i] = true;
+      } else {
+        renderLine[i] = false;
       }
     }
-    mvprintw(selected+2, 0, ">");
 
-    move(0, cursor);
+    renderScreen(input, cursor, selected, historyData, renderLine, numLines);
   }
 
   endwin();
