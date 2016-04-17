@@ -229,7 +229,7 @@ int main(int argc, char** argv) {
 
   {
     int found = 0;
-    for (int i = numLines; i >= 0; i--) {
+    for (int i = numLines-1; i >= 0; i--) {
       if (strstr(historyData+i*MAX_HISTORY_LINE_SIZE, input) != NULL) {
         found++;
         if (found > selected) {
