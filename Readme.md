@@ -10,11 +10,11 @@ Running
 
 Add the cloned folder to your path and run `asdf`
 
-- Up/Down -> select different commands
+- `<Up>`/`<Down>` -> select different commands
 
-- Enter -> runs the selected command
+- `<Enter>` -> runs the selected command
 
-- <C-Space> -> edit the selected command before running it
+- `<C-Space>` -> edit the selected command before running it
 
 Building
 --------
