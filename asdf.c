@@ -8,6 +8,36 @@
 
 const int MAX_HISTORY_LINE_SIZE=300;
 
+void outputCommand(char* fileName, char* command) {
+  FILE* outputFile = fopen(fileName, "w");
+  if (outputFile == NULL) {
+    printf("Can't open output file.\n" );
+    exit(1);
+  }
+  fputs(command, outputFile);
+  fclose(outputFile);
+}
+
+void streamCommand(char* command) {
+  FILE *fp;
+  char path[1035];
+
+  /* Open the command for reading. */
+  fp = popen(command, "r");
+  if (fp == NULL) {
+    printf("Failed to run command\n" );
+    exit(1);
+  }
+
+  /* Read the output a line at a time - output it. */
+  while (fgets(path, sizeof(path)-1, fp) != NULL) {
+    printf("%s", path);
+  }
+
+  /* close */
+  pclose(fp);
+}
+
 bool isWhitespace(char c) {
   return c == ' ' || c == '\0';
 }
@@ -41,7 +71,8 @@ char* loadHistoryData(int* numLines) {
   return history_data;
 }
 
-int main() {
+int main(int argc, char** argv) {
+  int result = 0;
   initscr();
   noecho();
   keypad(stdscr, TRUE);
@@ -58,7 +89,9 @@ int main() {
 
   int selected = 0;
 
-  while(1) {
+  bool runCommand = false;
+
+  while(!runCommand) {
     int c = getch();
     switch(c) {
       case KEY_BACKSPACE:
@@ -112,6 +145,14 @@ int main() {
           cursor = 0;
         }
         break;
+      case 10:
+        runCommand = true;
+        result = 0;
+        break;
+      case 0:
+        runCommand = true;
+        result = 1;
+        break;
       default:
         if ((c >= 'a' && c <= 'z')
          || (c >= 'A' && c <= 'Z')
@@ -126,8 +167,9 @@ int main() {
             size++;
             cursor++;
           }
+        } else {
+          //sprintf(input, "Num: %d", c);
         }
-        //sprintf(input, "Num: %d", c);
         break;
     }
 
@@ -156,10 +198,28 @@ int main() {
     move(0, cursor);
   }
 
+  endwin();
+
+  {
+    int found = 0;
+    for (int i = numLines; i >= 0; i--) {
+      if (strstr(historyData+i*MAX_HISTORY_LINE_SIZE, input) != NULL) {
+        found++;
+        if (found > selected) {
+          char* tmp = malloc(MAX_HISTORY_LINE_SIZE*sizeof(char));
+          strcpy(tmp, historyData+i*MAX_HISTORY_LINE_SIZE);
+          strtok(tmp, "\n");
+          //printf("%s", tmp);
+          outputCommand(argv[1], tmp);
+          free(tmp);
+          break;
+        }
+      }
+    }
+  }
+
   free(historyData);
   free(input);
 
-  endwin();
-
-  return 0;
+  return result;
 }
