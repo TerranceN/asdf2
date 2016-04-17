@@ -25,7 +25,7 @@ Building
 
 ### Requirements:
 
-- ncurses headers (you need to do something like `sudo apt-get install ncurses-dev` or `brew install ncurses`
+- ncurses development headers/libraries (you need to do something like `sudo apt-get install ncurses-dev` on Ubuntu, or `brew install ncurses` on Mac, or install the `libncurses-devel` package on Windows/Cygwin)
 
 - make
 
