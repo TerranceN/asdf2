@@ -2,11 +2,11 @@
 tmp=$(mktemp)
 ${BASH_SOURCE}_search.exe "$tmp"
 asdf_status=$?
-if [ "$asdf_status" != "1" ]; then
-  results=$(cat $tmp)
-  rm $tmp
+results=$(cat $tmp)
+rm $tmp
+if [ $asdf_status -ge 10 ]; then
   to_run=$results
-  if [ "$asdf_status" == "10" ]; then
+  if [ $asdf_status -eq 11 ]; then
     read -e -i "$results" to_run
   fi
   if [[ "$to_run" != "" && "$to_run" ]]; then

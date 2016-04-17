@@ -9,6 +9,11 @@
 
 #include "strmap.h"
 
+/* Return code meanings:
+ * 10: run the selected command
+ * 11: let the user modify the selected command
+ */
+
 const int MAX_SEARCH_SIZE = 150;
 const int MAX_HISTORY_LINE_SIZE=300;
 
@@ -201,7 +206,7 @@ void renderScreen(char* input, int cursor, int selected, char* lines, bool* rend
 }
 
 int main(int argc, char** argv) {
-  int result = 0;
+  int result = 10;
   initscr();
   noecho();
   keypad(stdscr, TRUE);
@@ -285,11 +290,11 @@ int main(int argc, char** argv) {
         break;
       case 10:
         runCommand = true;
-        result = 0;
+        result = 10;
         break;
       case 0:
         runCommand = true;
-        result = 10;
+        result = 11;
         break;
       default:
         if (c >= ' ' && c <= '~') {
