@@ -6,6 +6,8 @@
 
 #include <stdio.h>
 
+#include "strmap.h"
+
 const int MAX_SEARCH_SIZE = 150;
 const int MAX_HISTORY_LINE_SIZE=300;
 
@@ -73,80 +75,84 @@ char* loadHistoryData(int* numLines) {
 }
 
 void searchHistory(char* input, char* lines, bool* renderLine, int numLines) {
-  if (*input == '\0') {
-    memset(renderLine, true, numLines*sizeof(bool));
-    return;
-  }
-
   // split into tokens
-  int nTokens = 0;
+  int nTokens = 1;
   char* tokens = input;
 
-  // figure out how many tokens there are
-  int start = 0;
-  bool foundChar = false;
-  for (int i = 0; i < MAX_SEARCH_SIZE && input[i] != '\0'; i++) {
-    if (!isWhitespace(input[i])) {
-      foundChar = true;
-    } else {
-      if (i > 0 && foundChar && !isWhitespace(input[i-1]) && input[i-1] != '\\') {
-        nTokens += 1;
-        foundChar = false;
-      }
-    }
-  }
-  if (foundChar) {
-    nTokens += 1;
-  }
-
-  tokens = malloc(nTokens*MAX_SEARCH_SIZE*sizeof(char));
-
-  // copy token data into tokens array
-  int tokenIndex = 0;
-  start = 0;
-  foundChar = false;
-  int i;
-  for (i = 0; i < MAX_SEARCH_SIZE && input[i] != '\0'; i++) {
-    if (!isWhitespace(input[i])) {
-      if (!foundChar) {
+  if (*input != '\0') {
+    nTokens = 0;
+    // figure out how many tokens there are
+    int start = 0;
+    bool foundChar = false;
+    for (int i = 0; i < MAX_SEARCH_SIZE && input[i] != '\0'; i++) {
+      if (!isWhitespace(input[i])) {
         foundChar = true;
-        start = i;
-      }
-    } else {
-      if (i > 0 && foundChar && !isWhitespace(input[i-1]) && input[i-1] != '\\') {
-        int size = (i-start);
-        memcpy(tokens+tokenIndex*MAX_SEARCH_SIZE, input+start, size*sizeof(char));
-        tokens[tokenIndex*MAX_SEARCH_SIZE+size] = '\0';
-        tokenIndex += 1;
-        foundChar = false;
+      } else {
+        if (i > 0 && foundChar && !isWhitespace(input[i-1]) && input[i-1] != '\\') {
+          nTokens += 1;
+          foundChar = false;
+        }
       }
     }
-  }
-  if (foundChar) {
-    int size = (i-start);
-    memcpy(tokens+tokenIndex*MAX_SEARCH_SIZE, input+start, size*sizeof(char));
-    tokens[tokenIndex*MAX_SEARCH_SIZE+size] = '\0';
+    if (foundChar) {
+      nTokens += 1;
+    }
+
+    tokens = malloc(nTokens*MAX_SEARCH_SIZE*sizeof(char));
+
+    // copy token data into tokens array
+    int tokenIndex = 0;
+    start = 0;
+    foundChar = false;
+    int i;
+    for (i = 0; i < MAX_SEARCH_SIZE && input[i] != '\0'; i++) {
+      if (!isWhitespace(input[i])) {
+        if (!foundChar) {
+          foundChar = true;
+          start = i;
+        }
+      } else {
+        if (i > 0 && foundChar && !isWhitespace(input[i-1]) && input[i-1] != '\\') {
+          int size = (i-start);
+          memcpy(tokens+tokenIndex*MAX_SEARCH_SIZE, input+start, size*sizeof(char));
+          tokens[tokenIndex*MAX_SEARCH_SIZE+size] = '\0';
+          tokenIndex += 1;
+          foundChar = false;
+        }
+      }
+    }
+    if (foundChar) {
+      int size = (i-start);
+      memcpy(tokens+tokenIndex*MAX_SEARCH_SIZE, input+start, size*sizeof(char));
+      tokens[tokenIndex*MAX_SEARCH_SIZE+size] = '\0';
+    }
+
+    // fix any backslash spaces
+    for (int i = 0; i < nTokens; i++) {
+      char* loc = strstr(tokens+i*MAX_SEARCH_SIZE, "\\ ");
+      while (loc != NULL) {
+        memmove(loc, loc+1, (MAX_SEARCH_SIZE-(loc-(tokens+i*MAX_SEARCH_SIZE)))*sizeof(char));
+        loc = strstr(tokens+i*MAX_SEARCH_SIZE, "\\ ");
+      }
+    }
   }
 
-  // fix any backslash spaces
-  for (int i = 0; i < nTokens; i++) {
-    char* loc = strstr(tokens+i*MAX_SEARCH_SIZE, "\\ ");
-    while (loc != NULL) {
-      memmove(loc, loc+1, (MAX_SEARCH_SIZE-(loc-(tokens+i*MAX_SEARCH_SIZE)))*sizeof(char));
-      loc = strstr(tokens+i*MAX_SEARCH_SIZE, "\\ ");
-    }
-  }
+  StrMap* map = sm_new(50);
 
   for (int i = numLines; i >= 0; i--) {
     int matches = 0;
     for (int j = 0; j < nTokens; j++) {
-      if (strstr(lines+i*MAX_HISTORY_LINE_SIZE, tokens+j*MAX_SEARCH_SIZE) != NULL) {
+      if ((*(tokens+j*MAX_SEARCH_SIZE) == '\0' || strstr(lines+i*MAX_HISTORY_LINE_SIZE, tokens+j*MAX_SEARCH_SIZE) != NULL)
+          && !sm_exists(map, lines+i*MAX_HISTORY_LINE_SIZE)) {
+        sm_put(map, lines+i*MAX_HISTORY_LINE_SIZE, "");
         renderLine[i] = true;
       } else {
         renderLine[i] = false;
       }
     }
   }
+
+  sm_delete(map);
 }
 
 void renderScreen(char* input, int cursor, int selected, char* lines, bool* renderLine, int numLines) {
@@ -162,11 +168,17 @@ void renderScreen(char* input, int cursor, int selected, char* lines, bool* rend
     mvprintw(1, i, "-");
   }
 
-  int line = 2;
+  int line = 0;
   for (int i = numLines-1; i >= 0 && line < 50; i--) {
-    mvprintw(line, 0, " ");
+    mvprintw(line+2, 0, " ");
     if (renderLine[i]) {
-      mvprintw(line, 1, lines+i*MAX_HISTORY_LINE_SIZE);
+      if (line == selected) {
+        attron(COLOR_PAIR(1));
+      }
+      mvprintw(line+2, 1, lines+i*MAX_HISTORY_LINE_SIZE);
+      if (line == selected) {
+        attroff(COLOR_PAIR(1));
+      }
       line++;
     }
   }
@@ -180,6 +192,9 @@ int main(int argc, char** argv) {
   initscr();
   noecho();
   keypad(stdscr, TRUE);
+  start_color();
+  use_default_colors();
+  init_pair(1, COLOR_RED, -1);
 
   char* input = malloc(MAX_SEARCH_SIZE*sizeof(char));
   input[0] = '\0';
@@ -261,7 +276,7 @@ int main(int argc, char** argv) {
         break;
       case 0:
         runCommand = true;
-        result = 1;
+        result = 10;
         break;
       default:
         if (c >= ' ' && c <= '~') {
@@ -279,6 +294,7 @@ int main(int argc, char** argv) {
     }
 
     if (inputChanged) {
+      selected = 0;
       searchHistory(input, historyData, renderLine, numLines);
     }
 
@@ -290,7 +306,7 @@ int main(int argc, char** argv) {
   {
     int found = 0;
     for (int i = numLines-1; i >= 0; i--) {
-      if (strstr(historyData+i*MAX_HISTORY_LINE_SIZE, input) != NULL) {
+      if (renderLine[i]) {
         found++;
         if (found > selected) {
           char* tmp = malloc(MAX_HISTORY_LINE_SIZE*sizeof(char));
