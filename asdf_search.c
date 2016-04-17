@@ -1,3 +1,4 @@
+#define _GNU_SOURCE
 #include <ncurses.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -143,7 +144,7 @@ void searchHistory(char* input, char* lines, bool* renderLine, int numLines) {
     if (!sm_exists(map, lines+i*MAX_HISTORY_LINE_SIZE)) {
       int matches = 0;
       for (int j = 0; j < nTokens; j++) {
-        if (*(tokens+j*MAX_SEARCH_SIZE) == '\0' || strstr(lines+i*MAX_HISTORY_LINE_SIZE, tokens+j*MAX_SEARCH_SIZE) != NULL) {
+        if (*(tokens+j*MAX_SEARCH_SIZE) == '\0' || strcasestr(lines+i*MAX_HISTORY_LINE_SIZE, tokens+j*MAX_SEARCH_SIZE) != NULL) {
           matches++;
         } else {
           break;
