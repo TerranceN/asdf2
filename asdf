@@ -1,20 +1,17 @@
-#!/bin/bash
-
 tmp=$(mktemp)
-$(dirname $0)/asdf_search.exe "$tmp"
+${BASH_SOURCE}_search.exe "$tmp"
 asdf_status=$?
-if [ "$asdf_status" == "1" ]; then
-  exit
-fi
-results=$(cat $tmp)
-rm $tmp
-to_run=$results
-if [ "$asdf_status" == "10" ]; then
-  read -e -i "$results" to_run
-fi
-if [[ "$to_run" != "" && "$to_run" ]]; then
-  eval $to_run
-  if [[ "$to_run" != "asdf" ]]; then
-    echo "$to_run" >> $HISTFILE
+if [ "$asdf_status" != "1" ]; then
+  results=$(cat $tmp)
+  rm $tmp
+  to_run=$results
+  if [ "$asdf_status" == "10" ]; then
+    read -e -i "$results" to_run
+  fi
+  if [[ "$to_run" != "" && "$to_run" ]]; then
+    eval $to_run
+    if [[ "$to_run" != "asdf" ]]; then
+      echo "$to_run" >> $HISTFILE
+    fi
   fi
 fi

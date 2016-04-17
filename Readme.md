@@ -8,7 +8,11 @@ Rewrite of [this script](https://github.com/TerranceN/asdf) using ncurses for bl
 Running
 -------
 
-Add the cloned folder to your path and run `asdf`
+Add the cloned folder to your path and run `asdf`.
+
+Certain bash commands (like `cd some/path` won't run correctly because this will be inside of a subshell, which then exits, losing your changes. In order to get around that you can source `asdf` instead of just running it. Simply add `alias asdf="source /path/to/asdf"` to your `.bashrc`.
+
+Controls:
 
 - `<Up>`/`<Down>` -> select different commands
 

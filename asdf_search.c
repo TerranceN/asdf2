@@ -16,7 +16,7 @@ void outputCommand(char* fileName, char* command) {
   FILE* outputFile = fopen(fileName, "w");
   if (outputFile == NULL) {
     printf("Can't open output file.\n" );
-    exit(1);
+    exit(2);
   }
   fputs(command, outputFile);
   fclose(outputFile);
@@ -30,7 +30,7 @@ void streamCommand(char* command) {
   fp = popen(command, "r");
   if (fp == NULL) {
     printf("Failed to run command\n" );
-    exit(1);
+    exit(2);
   }
 
   /* Read the output a line at a time - output it. */
@@ -49,7 +49,13 @@ bool isWhitespace(char c) {
 char* loadHistoryData(int* numLines) {
   char* history_data;
 
-  FILE* history_file = fopen(getenv("HISTFILE"), "r");
+  char* hist_file_name = getenv("HISTFILE");
+  if (hist_file_name == NULL) {
+    endwin();
+    printf("Need to set HISTFILE env var\n");
+    exit(2);
+  }
+  FILE* history_file = fopen(hist_file_name, "r");
   if (history_file != NULL) {
     int nLines = 0;
     {
@@ -140,7 +146,7 @@ void searchHistory(char* input, char* lines, bool* renderLine, int numLines) {
 
   StrMap* map = sm_new(50);
 
-  for (int i = numLines; i >= 0; i--) {
+  for (int i = numLines-1; i >= 0; i--) {
     if (!sm_exists(map, lines+i*MAX_HISTORY_LINE_SIZE)) {
       int matches = 0;
       for (int j = 0; j < nTokens; j++) {
@@ -208,7 +214,7 @@ int main(int argc, char** argv) {
   int size = 0;
   int cursor = 0;
 
-  int numLines;
+  int numLines = 0;
   char* historyData = loadHistoryData(&numLines);
 
   bool* renderLine = malloc(numLines*sizeof(bool));
