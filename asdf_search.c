@@ -6,6 +6,7 @@
 
 #include <stdio.h>
 
+const int MAX_SEARCH_SIZE = 150;
 const int MAX_HISTORY_LINE_SIZE=300;
 
 void outputCommand(char* fileName, char* command) {
@@ -72,11 +73,78 @@ char* loadHistoryData(int* numLines) {
 }
 
 void searchHistory(char* input, char* lines, bool* renderLine, int numLines) {
-  for (int i = numLines; i >= 0; i--) {
-    if (*input == '\0' || strstr(lines+i*MAX_HISTORY_LINE_SIZE, input) != NULL) {
-      renderLine[i] = true;
+  if (*input == '\0') {
+    memset(renderLine, true, numLines*sizeof(bool));
+    return;
+  }
+
+  // split into tokens
+  int nTokens = 0;
+  char* tokens = input;
+
+  // figure out how many tokens there are
+  int start = 0;
+  bool foundChar = false;
+  for (int i = 0; i < MAX_SEARCH_SIZE && input[i] != '\0'; i++) {
+    if (!isWhitespace(input[i])) {
+      foundChar = true;
     } else {
-      renderLine[i] = false;
+      if (i > 0 && foundChar && !isWhitespace(input[i-1]) && input[i-1] != '\\') {
+        nTokens += 1;
+        foundChar = false;
+      }
+    }
+  }
+  if (foundChar) {
+    nTokens += 1;
+  }
+
+  tokens = malloc(nTokens*MAX_SEARCH_SIZE*sizeof(char));
+
+  // copy token data into tokens array
+  int tokenIndex = 0;
+  start = 0;
+  foundChar = false;
+  int i;
+  for (i = 0; i < MAX_SEARCH_SIZE && input[i] != '\0'; i++) {
+    if (!isWhitespace(input[i])) {
+      if (!foundChar) {
+        foundChar = true;
+        start = i;
+      }
+    } else {
+      if (i > 0 && foundChar && !isWhitespace(input[i-1]) && input[i-1] != '\\') {
+        int size = (i-start);
+        memcpy(tokens+tokenIndex*MAX_SEARCH_SIZE, input+start, size*sizeof(char));
+        tokens[tokenIndex*MAX_SEARCH_SIZE+size] = '\0';
+        tokenIndex += 1;
+        foundChar = false;
+      }
+    }
+  }
+  if (foundChar) {
+    int size = (i-start);
+    memcpy(tokens+tokenIndex*MAX_SEARCH_SIZE, input+start, size*sizeof(char));
+    tokens[tokenIndex*MAX_SEARCH_SIZE+size] = '\0';
+  }
+
+  // fix any backslash spaces
+  for (int i = 0; i < nTokens; i++) {
+    char* loc = strstr(tokens+i*MAX_SEARCH_SIZE, "\\ ");
+    while (loc != NULL) {
+      memmove(loc, loc+1, (MAX_SEARCH_SIZE-(loc-(tokens+i*MAX_SEARCH_SIZE)))*sizeof(char));
+      loc = strstr(tokens+i*MAX_SEARCH_SIZE, "\\ ");
+    }
+  }
+
+  for (int i = numLines; i >= 0; i--) {
+    int matches = 0;
+    for (int j = 0; j < nTokens; j++) {
+      if (strstr(lines+i*MAX_HISTORY_LINE_SIZE, tokens+j*MAX_SEARCH_SIZE) != NULL) {
+        renderLine[i] = true;
+      } else {
+        renderLine[i] = false;
+      }
     }
   }
 }
@@ -113,9 +181,7 @@ int main(int argc, char** argv) {
   noecho();
   keypad(stdscr, TRUE);
 
-  const int BUFFER_SIZE = 150;
-
-  char* input = malloc(BUFFER_SIZE*sizeof(char));
+  char* input = malloc(MAX_SEARCH_SIZE*sizeof(char));
   input[0] = '\0';
   int size = 0;
   int cursor = 0;
@@ -198,14 +264,8 @@ int main(int argc, char** argv) {
         result = 1;
         break;
       default:
-        if ((c >= 'a' && c <= 'z')
-         || (c >= 'A' && c <= 'Z')
-         || c == ' '
-         || c == '-'
-         || c == '.'
-         || c == '*'
-         || c == '\\') {
-          if (size < BUFFER_SIZE-1) {
+        if (c >= ' ' && c <= '~') {
+          if (size < MAX_SEARCH_SIZE-1) {
             inputChanged = true;
             memmove(input+cursor+1, input+cursor, (size-cursor+1)*sizeof(char));
             input[cursor] = c;
