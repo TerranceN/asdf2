@@ -11,4 +11,5 @@ if [ "$asdf_status" == 1 ]; then
 fi
 if [ "$(echo $to_run | xargs)" != "" ]; then
   $to_run
+  echo "$to_run" >> $HISTFILE
 fi
