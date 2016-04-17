@@ -71,6 +71,16 @@ char* loadHistoryData(int* numLines) {
   return history_data;
 }
 
+void searchHistory(char* input, char* lines, bool* renderLine, int numLines) {
+  for (int i = numLines; i >= 0; i--) {
+    if (*input == '\0' || strstr(lines+i*MAX_HISTORY_LINE_SIZE, input) != NULL) {
+      renderLine[i] = true;
+    } else {
+      renderLine[i] = false;
+    }
+  }
+}
+
 void renderScreen(char* input, int cursor, int selected, char* lines, bool* renderLine, int numLines) {
   clear();
 
@@ -85,7 +95,7 @@ void renderScreen(char* input, int cursor, int selected, char* lines, bool* rend
   }
 
   int line = 2;
-  for (int i = numLines; i >= 0 && line < 50; i--) {
+  for (int i = numLines-1; i >= 0 && line < 50; i--) {
     mvprintw(line, 0, " ");
     if (renderLine[i]) {
       mvprintw(line, 1, lines+i*MAX_HISTORY_LINE_SIZE);
@@ -120,15 +130,18 @@ int main(int argc, char** argv) {
 
   bool runCommand = false;
 
+  searchHistory(input, historyData, renderLine, numLines);
   renderScreen(input, cursor, selected, historyData, renderLine, numLines);
 
   while(!runCommand) {
+    bool inputChanged = false;
     int c = getch();
     switch(c) {
       case KEY_BACKSPACE:
       case KEY_DC:
       case 127:
         if (size > 0) {
+          inputChanged = true;
           memmove(input+cursor-1, input+cursor, (size-cursor+1)*sizeof(char));
           size--;
           if (cursor > 0) {
@@ -193,6 +206,7 @@ int main(int argc, char** argv) {
          || c == '*'
          || c == '\\') {
           if (size < BUFFER_SIZE-1) {
+            inputChanged = true;
             memmove(input+cursor+1, input+cursor, (size-cursor+1)*sizeof(char));
             input[cursor] = c;
             size++;
@@ -204,12 +218,8 @@ int main(int argc, char** argv) {
         break;
     }
 
-    for (int i = numLines; i >= 0; i--) {
-      if (strstr(historyData+i*MAX_HISTORY_LINE_SIZE, input) != NULL) {
-        renderLine[i] = true;
-      } else {
-        renderLine[i] = false;
-      }
+    if (inputChanged) {
+      searchHistory(input, historyData, renderLine, numLines);
     }
 
     renderScreen(input, cursor, selected, historyData, renderLine, numLines);
