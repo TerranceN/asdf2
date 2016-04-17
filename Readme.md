@@ -20,6 +20,15 @@ Controls:
 
 - `<C-Space>` -> edit the selected command before running it
 
+TODO:
+-----
+
+- Add support for deleting commands from your `$HISTFILE`
+
+- Add regex support
+
+- Add options for things like whether to add `asdf`-run commands to your `$HISTFILE` (currently it does by default)
+
 Building
 --------
 
