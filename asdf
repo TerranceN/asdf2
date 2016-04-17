@@ -10,6 +10,6 @@ if [ "$asdf_status" == 1 ]; then
   read -e -i "$results" to_run
 fi
 if [ "$(echo $to_run | xargs)" != "" ]; then
-  $to_run
+  eval $to_run
   echo "$to_run" >> $HISTFILE
 fi
