@@ -140,10 +140,16 @@ void searchHistory(char* input, char* lines, bool* renderLine, int numLines) {
   StrMap* map = sm_new(50);
 
   for (int i = numLines; i >= 0; i--) {
-    int matches = 0;
-    for (int j = 0; j < nTokens; j++) {
-      if ((*(tokens+j*MAX_SEARCH_SIZE) == '\0' || strstr(lines+i*MAX_HISTORY_LINE_SIZE, tokens+j*MAX_SEARCH_SIZE) != NULL)
-          && !sm_exists(map, lines+i*MAX_HISTORY_LINE_SIZE)) {
+    if (!sm_exists(map, lines+i*MAX_HISTORY_LINE_SIZE)) {
+      int matches = 0;
+      for (int j = 0; j < nTokens; j++) {
+        if (*(tokens+j*MAX_SEARCH_SIZE) == '\0' || strstr(lines+i*MAX_HISTORY_LINE_SIZE, tokens+j*MAX_SEARCH_SIZE) != NULL) {
+          matches++;
+        } else {
+          break;
+        }
+      }
+      if (matches == nTokens) {
         sm_put(map, lines+i*MAX_HISTORY_LINE_SIZE, "");
         renderLine[i] = true;
       } else {
