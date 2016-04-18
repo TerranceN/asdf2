@@ -14,6 +14,11 @@
  * 11: let the user modify the selected command
  */
 
+typedef struct {
+  int start;
+  int size;
+} Match;
+
 const int MAX_SEARCH_SIZE = 150;
 const int MAX_HISTORY_LINE_SIZE=300;
 
@@ -86,10 +91,11 @@ char* loadHistoryData(int* numLines) {
   return history_data;
 }
 
-void searchHistory(char* input, char* lines, bool* renderLine, int numLines) {
+void searchHistory(char* input, char* lines, bool* renderLine, int numLines, Match** matchesOut, int* nTokensOut) {
   // split into tokens
   int nTokens = 1;
   char* tokens = input;
+  Match* matches = NULL;
 
   if (*input != '\0') {
     nTokens = 0;
@@ -111,6 +117,7 @@ void searchHistory(char* input, char* lines, bool* renderLine, int numLines) {
     }
 
     tokens = malloc(nTokens*MAX_SEARCH_SIZE*sizeof(char));
+    matches = malloc(numLines*nTokens*sizeof(Match));
 
     // copy token data into tokens array
     int tokenIndex = 0;
@@ -153,15 +160,20 @@ void searchHistory(char* input, char* lines, bool* renderLine, int numLines) {
 
   for (int i = numLines-1; i >= 0; i--) {
     if (!sm_exists(map, lines+i*MAX_HISTORY_LINE_SIZE)) {
-      int matches = 0;
+      int nMatches = 0;
       for (int j = 0; j < nTokens; j++) {
-        if (*(tokens+j*MAX_SEARCH_SIZE) == '\0' || strcasestr(lines+i*MAX_HISTORY_LINE_SIZE, tokens+j*MAX_SEARCH_SIZE) != NULL) {
-          matches++;
+        char* start;
+        if (*(tokens+j*MAX_SEARCH_SIZE) == '\0' || (start=strcasestr(lines+i*MAX_HISTORY_LINE_SIZE, tokens+j*MAX_SEARCH_SIZE)) != NULL) {
+          if (matches != NULL) {
+            matches[i*nTokens+j].start = (start-(lines+i*MAX_HISTORY_LINE_SIZE));
+            matches[i*nTokens+j].size = strlen(tokens+j*MAX_SEARCH_SIZE);
+          }
+          nMatches++;
         } else {
           break;
         }
       }
-      if (matches == nTokens) {
+      if (nMatches == nTokens) {
         sm_put(map, lines+i*MAX_HISTORY_LINE_SIZE, "");
         renderLine[i] = true;
       } else {
@@ -175,9 +187,12 @@ void searchHistory(char* input, char* lines, bool* renderLine, int numLines) {
   if (*input != '\0') {
     free(tokens);
   }
+
+  *nTokensOut = nTokens;
+  *matchesOut = matches;
 }
 
-void renderScreen(char* input, int cursor, int selected, char* lines, bool* renderLine, int numLines) {
+void renderScreen(char* input, int cursor, int selected, char* lines, bool* renderLine, int numLines, Match* matches, int nTokens) {
   clear();
 
   int max_y;
@@ -198,6 +213,18 @@ void renderScreen(char* input, int cursor, int selected, char* lines, bool* rend
         attron(COLOR_PAIR(1));
       }
       mvprintw(line+2, 1, lines+i*MAX_HISTORY_LINE_SIZE);
+      if (matches != NULL) {
+        attron(A_BOLD);
+        for (int j = 0; j < nTokens; j++) {
+          Match* match = matches+i*nTokens+j;
+          char* tmp = malloc((match->size)*sizeof(char));
+          memcpy(tmp, lines+i*MAX_HISTORY_LINE_SIZE+(match->start), match->size*sizeof(char));
+          tmp[match->size] = '\0';
+          mvprintw(line+2, match->start+1, tmp);
+          free(tmp);
+        }
+        attroff(A_BOLD);
+      }
       if (line == selected) {
         attroff(COLOR_PAIR(1));
       }
@@ -229,12 +256,15 @@ int main(int argc, char** argv) {
   bool* renderLine = malloc(numLines*sizeof(bool));
   memset(renderLine, 0, numLines*sizeof(bool));
 
+  Match* matches = NULL;
+  int nTokens = 0;
+
   int selected = 0;
 
   bool runCommand = false;
 
-  searchHistory(input, historyData, renderLine, numLines);
-  renderScreen(input, cursor, selected, historyData, renderLine, numLines);
+  searchHistory(input, historyData, renderLine, numLines, &matches, &nTokens);
+  renderScreen(input, cursor, selected, historyData, renderLine, numLines, matches, nTokens);
 
   while(!runCommand) {
     bool inputChanged = false;
@@ -316,11 +346,15 @@ int main(int argc, char** argv) {
     }
 
     if (inputChanged) {
+      if (matches != NULL) {
+        free(matches);
+        matches = NULL;
+      }
       selected = 0;
-      searchHistory(input, historyData, renderLine, numLines);
+      searchHistory(input, historyData, renderLine, numLines, &matches, &nTokens);
     }
 
-    renderScreen(input, cursor, selected, historyData, renderLine, numLines);
+    renderScreen(input, cursor, selected, historyData, renderLine, numLines, matches, nTokens);
   }
 
   endwin();
@@ -343,6 +377,10 @@ int main(int argc, char** argv) {
     }
   }
 
+  if (matches != NULL) {
+    free(matches);
+    matches = NULL;
+  }
   free(historyData);
   free(input);
   free(renderLine);
