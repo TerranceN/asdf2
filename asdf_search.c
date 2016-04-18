@@ -171,6 +171,10 @@ void searchHistory(char* input, char* lines, bool* renderLine, int numLines) {
   }
 
   sm_delete(map);
+
+  if (*input != '\0') {
+    free(tokens);
+  }
 }
 
 void renderScreen(char* input, int cursor, int selected, char* lines, bool* renderLine, int numLines) {
@@ -341,6 +345,7 @@ int main(int argc, char** argv) {
 
   free(historyData);
   free(input);
+  free(renderLine);
 
   return result;
 }
