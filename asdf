@@ -10,9 +10,10 @@ if [ $asdf_status -ge 10 ]; then
     read -e -i "$results" to_run
   fi
   if [[ "$to_run" != "" && "$to_run" ]]; then
-    eval $to_run
-    if [[ "$to_run" != "asdf" ]]; then
-      echo "$to_run" >> $HISTFILE
+    if [ $asdf_status -ne 11 ]; then
+      echo "$to_run"
     fi
+    history -s $to_run
+    eval $to_run
   fi
 fi
