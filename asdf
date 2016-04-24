@@ -1,5 +1,5 @@
 #!/bin/bash
-results=`${BASH_SOURCE}_search.exe`
+results=`HISTFILE="$HISTFILE" ${BASH_SOURCE}_search.exe`
 asdf_status=$?
 if [ $asdf_status -ge 10 ]; then
   to_run=$results
