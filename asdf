@@ -1,9 +1,6 @@
 #!/bin/bash
-tmp=$(mktemp)
-${BASH_SOURCE}_search.exe "$tmp"
+results=`${BASH_SOURCE}_search.exe`
 asdf_status=$?
-results=$(cat $tmp)
-rm $tmp
 if [ $asdf_status -ge 10 ]; then
   to_run=$results
   if [ $asdf_status -eq 11 ]; then

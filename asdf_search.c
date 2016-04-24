@@ -238,7 +238,12 @@ void renderScreen(char* input, int cursor, int selected, char* lines, bool* rend
 
 int main(int argc, char** argv) {
   int result = 10;
-  initscr();
+
+  // hack to get around ncurses blowing up stdout
+  FILE* fd = fopen("/dev/tty", "r+");
+  SCREEN* scr = newterm(NULL, fd, fd);
+  setvbuf(stdout, NULL, _IONBF, 0);
+
   noecho();
   keypad(stdscr, TRUE);
   start_color();
@@ -358,6 +363,7 @@ int main(int argc, char** argv) {
   }
 
   endwin();
+  delscreen(scr);
 
   {
     int found = 0;
@@ -368,8 +374,8 @@ int main(int argc, char** argv) {
           char* tmp = malloc(MAX_HISTORY_LINE_SIZE*sizeof(char));
           strcpy(tmp, historyData+i*MAX_HISTORY_LINE_SIZE);
           strtok(tmp, "\n");
-          //printf("%s", tmp);
-          outputCommand(argv[1], tmp);
+          printf("%s\n", tmp);
+          //outputCommand(argv[1], tmp);
           free(tmp);
           break;
         }
