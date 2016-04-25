@@ -1,16 +1,60 @@
 #!/bin/bash
-results=`HISTFILE="$HISTFILE" ${BASH_SOURCE}_search.exe`
-asdf_status=$?
-if [ $asdf_status -ge 10 ]; then
-  to_run=$results
-  if [ $asdf_status -eq 11 ]; then
-    read -e -i "$results" to_run
-  fi
-  if [[ "$to_run" != "" && "$to_run" ]]; then
-    if [ $asdf_status -ne 11 ]; then
-      echo "$to_run"
+
+# command line switch defaults
+write=true
+
+function _help() {
+  echo "Usage: asdf [OPTION]"
+  echo ""
+  echo "Type a command to search your history for it. Spaces allow you to search for multiple strings at the same time."
+  echo ""
+  echo "Press Enter to run the command, ^Space to edit the command and then run it, and ^C to exit at any time without running anything."
+  echo ""
+  echo "Available options:"
+  echo "--write:[true|false]    Whether to write to HISTFILE when running a command. Defaults to true."
+  echo "--help                  Print this help text and exit."
+}
+
+function _asdf_main() {
+  results=`HISTFILE="$HISTFILE" ${BASH_SOURCE}_search.exe`
+  asdf_status=$?
+  if [ $asdf_status -ge 10 ]; then
+    to_run=$results
+    if [ $asdf_status -eq 11 ]; then
+      read -e -i "$results" to_run
     fi
-    history -s $to_run
-    eval $to_run
+    if [[ "$to_run" != "" && "$to_run" ]]; then
+      if [ $asdf_status -ne 11 ]; then
+        echo "$to_run"
+      fi
+      if [ $write == true ]; then
+        history -s $to_run
+      fi
+      eval $to_run
+    fi
   fi
+}
+
+runasdf=true
+
+# process arguments
+while [ "$1" != "" ]; do
+  case $1 in
+  --help*)
+    _help
+    runasdf=false
+    ;;
+  --write:*)
+    write=`echo $1 | sed 's/^--[^:]\+:\(.*\)$/\1/'`
+    ;;
+  *)
+    echo "Unknown argument, printing helptext and exiting..."
+    _help
+    runasdf=false
+  esac
+  shift
+done
+
+if [ $runasdf == true ]; then
+  _asdf_main
 fi
