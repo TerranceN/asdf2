@@ -1,5 +1,24 @@
 #!/bin/bash
 
+shell=unknown
+sourced=false
+current_dir=
+
+if [[ -n $BASH_VERSION ]]; then
+  if [[ "${BASH_SOURCE}" != "$0" ]]; then
+    sourced=true
+  fi
+  shell="bash"
+elif [[ -n $ZSH_VERSION ]]; then
+  if [[ "${(%):-%x} != "$0"" ]]; then
+    sourced=true
+  fi
+  shell="zsh"
+else
+  echo "WARNING: Unknown shell. This was made for bash and zsh."
+  echo "  It may not work for your shell."
+fi
+
 # command line switch defaults
 write=true
 
@@ -20,7 +39,7 @@ function _help() {
 }
 
 function _asdf_main() {
-  results=`HISTFILE="$HISTFILE" ${BASH_SOURCE}_search.exe`
+  results=`HISTFILE="$HISTFILE" ${current_dir}/asdf_search.exe`
   asdf_status=$?
   if [ $asdf_status -ge 10 ]; then
     to_run=$results
@@ -31,13 +50,30 @@ function _asdf_main() {
       if [ $asdf_status -ne 11 ]; then
         echo "$to_run"
       fi
-      if [ $write == true ]; then
-        history -s $to_run
+      if [[ $write == true ]]; then
+        if [[ $shell == "bash" ]]; then
+          history -s "$to_run"
+        elif [[ $shell == "zsh" ]]; then
+          print -S "$to_run"
+        fi
       fi
       eval $to_run
     fi
   fi
 }
+
+if [[ $sourced == true ]]; then
+  if [[ "$shell" =~ "bash" ]]; then
+    current_dir=`dirname ${BASH_SOURCE}`
+  elif [[ "$shell" =~ "zsh" ]]; then
+    current_dir=`dirname ${(%):-%x}`
+  fi
+else
+  echo "WARNING: It seems like this is running as a script."
+  echo "  Some commands (like cd), and features (like adding to HISTFILE) won't work."
+  echo "  Source this script instead of just running it to resolve these issues."
+  current_dir=`dirname $0`
+fi
 
 runasdf=true
 
@@ -59,6 +95,6 @@ while [ "$1" != "" ]; do
   shift
 done
 
-if [ $runasdf == true ]; then
+if [[ $runasdf == true ]]; then
   _asdf_main
 fi

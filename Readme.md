@@ -42,7 +42,7 @@ TODO:
 
 - Add support for deleting commands from your `$HISTFILE`
 
-- Add support for other shells (zsh and fish at least)
+- Add support for other shells (~~zsh~~ and fish at least)
 
 - Add support for bash movement hotkeys (like `^W` deleting a word)
 
