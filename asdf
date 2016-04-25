@@ -5,14 +5,18 @@ write=true
 
 function _help() {
   echo "Usage: asdf [OPTION]"
+  echo "Fast and flexible history searching and exploring."
+  echo "Type a command to search your history for it."
+  echo "Spaces allow you to search for multiple strings at the same time."
   echo ""
-  echo "Type a command to search your history for it. Spaces allow you to search for multiple strings at the same time."
-  echo ""
-  echo "Press Enter to run the command, ^Space to edit the command and then run it, and ^C to exit at any time without running anything."
+  echo "Controls:"
+  echo "  Press Enter to run the command, or ^Space to edit the command and then run it."
+  echo "  ^C to exit at any time without running anything."
   echo ""
   echo "Available options:"
-  echo "--write:[true|false]    Whether to write to HISTFILE when running a command. Defaults to true."
-  echo "--help                  Print this help text and exit."
+  echo "  --write:[true|false]    Whether to write to HISTFILE when running a command."
+  echo "                          Default:true"
+  echo "  --help                  Print this help text and exit."
 }
 
 function _asdf_main() {
