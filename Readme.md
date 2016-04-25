@@ -1,7 +1,7 @@
 ASDF2
 =====
 
-Fast history searching tool.
+Fast history searching tool for bash.
 
 Rewrite of [this script](https://github.com/TerranceN/asdf) using ncurses for blazing fast speed, hence the 2.
 
@@ -42,8 +42,8 @@ TODO:
 
 - Add support for deleting commands from your `$HISTFILE`
 
+- Add support for other shells (zsh and fish at least)
+
 - Add support for bash movement hotkeys (like `^W` deleting a word)
 
 - Add regex support (assuming it doesn't slow things down too much)
-
-- Add options for things like whether to add `asdf`-run commands to your `$HISTFILE` (currently it does by default)
