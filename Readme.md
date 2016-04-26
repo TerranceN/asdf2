@@ -59,6 +59,8 @@ PROMPT_COMMAND="history -a;$PROMPT_COMMAND"
 TODO:
 -----
 
+- Clean up the code. It's kind of a mess right now. Manageable, but a mess.
+
 - Add support for other shells (~~zsh~~ and fish at least)
 
 - Add support for bash movement hotkeys (like `^W` deleting a word)
