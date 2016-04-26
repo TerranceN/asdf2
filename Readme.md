@@ -7,11 +7,15 @@ Rewrite of [this script](https://github.com/TerranceN/asdf) using ncurses for bl
 
 #### Using asdf to search for a command and running it:
 
-![Example of running asdf](http://g.recordit.co/I7tinvv5mB.gif)
+![Example of running asdf](http://i.imgur.com/gXyuije.gif)
 
 #### Using asdf to search for a command, and edit it before running:
 
-![Example of editing a command](http://g.recordit.co/UXdOKHGa2w.gif)
+![Example of editing a command](http://i.imgur.com/8NgLbI5.gif)
+
+#### Using asdf to delete a command from the history:
+
+![Example of deleting a command](http://i.imgur.com/nWuVLVq.gif)
 
 Building
 --------
