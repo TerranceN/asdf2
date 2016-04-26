@@ -10,6 +10,7 @@
 #include "strmap.h"
 
 /* Return code meanings:
+ * 1:  ^C or ^Z
  * 10: run the selected command
  * 11: let the user modify the selected command
  */
@@ -245,6 +246,7 @@ int main(int argc, char** argv) {
   setvbuf(stdout, NULL, _IONBF, 0);
 
   noecho();
+  raw();
   keypad(stdscr, TRUE);
   start_color();
   use_default_colors();
@@ -334,6 +336,11 @@ int main(int argc, char** argv) {
       case 0:
         runCommand = true;
         result = 11;
+        break;
+      case 3:  // ^C
+      case 26: // ^Z
+        runCommand = true;
+        result = 1;
         break;
       default:
         if (c >= ' ' && c <= '~') {
