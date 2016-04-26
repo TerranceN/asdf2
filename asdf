@@ -30,6 +30,7 @@ function _help() {
   echo ""
   echo "Controls:"
   echo "  Press Enter to run the command, or ^Space to edit the command and then run it."
+  echo "  ^Del to remove the selected command from your HISTFILE."
   echo "  ^C to exit at any time without running anything."
   echo ""
   echo "Available options:"

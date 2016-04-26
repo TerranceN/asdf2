@@ -37,6 +37,8 @@ Controls:
 
 - `<C-Space>` -> edit the selected command before running it
 
+- `<C-Del>` -> remove the selected command (and any copies) from your HISTFILE
+
 #### Extras
 
 Not required, but adding the following to your `.bashrc` can make interacting with your history a little bit nicer:
@@ -56,8 +58,6 @@ PROMPT_COMMAND="history -a;$PROMPT_COMMAND"
 
 TODO:
 -----
-
-- Add support for deleting commands from your `$HISTFILE`
 
 - Add support for other shells (~~zsh~~ and fish at least)
 
