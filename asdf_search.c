@@ -197,6 +197,133 @@ void searchHistory(char* input, char* lines, bool* renderLine, int numLines, Mat
   *matchesOut = matches;
 }
 
+char* deleteAndReload(char* input, int selected, char* lines, bool* renderLine, int* numLines) {
+  // figure out which commands to delete
+  int nToDelete = 1;
+  int* toDelete = NULL;
+  {
+    int selectedIndex;
+    { // Find the selected one
+      int matched = 0;
+      for (int i = *numLines-1; i >= 0; i--) {
+        if (renderLine[i]) {
+          if (matched == selected) {
+            selectedIndex = i;
+            break;
+          }
+          matched++;
+        }
+      }
+    }
+    char* selected = lines+selectedIndex*MAX_HISTORY_LINE_SIZE;
+
+    int toDeleteSize = 1;
+    toDelete = malloc(toDeleteSize*sizeof(int));
+    toDelete[0] = selectedIndex;
+
+    for (int i = selectedIndex-1; i >= 0; i--) {
+      if (strcmp(selected, lines+i*MAX_HISTORY_LINE_SIZE) == 0) {
+        // make array bigger if we need it
+        if (nToDelete == toDeleteSize) {
+          int* tmp = malloc(toDeleteSize*2*sizeof(int));
+          memcpy(tmp, toDelete, toDeleteSize*sizeof(int));
+          toDeleteSize *= 2;
+          free(toDelete);
+          toDelete = tmp;
+        }
+        toDelete[nToDelete] = i;
+        nToDelete++;
+      }
+    }
+  }
+
+  char* history_data;
+  char* full_history_data;
+  int nLines = 0;
+  int nLinesCommands = 0;
+
+  char* hist_file_name = getenv("HISTFILE");
+  if (hist_file_name == NULL) {
+    endwin();
+    printf("Need to set HISTFILE env var\n");
+    exit(2);
+  }
+  { // open file and grab contents
+    FILE* history_file = fopen(hist_file_name, "r");
+    if (history_file != NULL) {
+      {
+        int currentLine = 0;
+        int checkToDelete = nToDelete-1;
+        char line[MAX_HISTORY_LINE_SIZE];
+        while(fgets((char*)(&line), MAX_HISTORY_LINE_SIZE*sizeof(char), history_file) != NULL) {
+          if (checkToDelete < 0 || currentLine != toDelete[checkToDelete]) {
+            nLines++;
+            if (line[0] != '#') {
+              nLinesCommands++;
+            }
+          } else {
+            if (line[0] != '#') {
+              checkToDelete--;
+            }
+          }
+          if (line[0] != '#') {
+            currentLine++;
+          }
+        }
+      }
+
+      rewind(history_file);
+
+      {
+        full_history_data = malloc(nLines*MAX_HISTORY_LINE_SIZE*sizeof(char));
+        history_data = malloc(nLinesCommands*MAX_HISTORY_LINE_SIZE*sizeof(char));
+
+        int currentLine = 0;
+
+        int lineCount = 0;
+        int currentCommand = 0;
+        int checkToDelete = nToDelete-1;
+        char line[MAX_HISTORY_LINE_SIZE];
+        while(fgets((char*)(&line), MAX_HISTORY_LINE_SIZE*sizeof(char), history_file) != NULL) {
+          if (checkToDelete < 0 || currentLine != toDelete[checkToDelete]) {
+            memcpy(full_history_data+lineCount*MAX_HISTORY_LINE_SIZE, &line, MAX_HISTORY_LINE_SIZE*sizeof(char));
+            lineCount++;
+            if (line[0] != '#') {
+              memcpy(history_data+currentCommand*MAX_HISTORY_LINE_SIZE, &line, MAX_HISTORY_LINE_SIZE*sizeof(char));
+              currentCommand++;
+            }
+          } else {
+            if (line[0] != '#') {
+              checkToDelete--;
+            }
+          }
+          if (line[0] != '#') {
+            currentLine++;
+          }
+        }
+      }
+      fclose(history_file);
+    }
+  }
+
+  { // write the new contents to the file
+    FILE* history_file = fopen(hist_file_name, "w");
+    if (history_file != NULL) {
+      for (int i = 0; i < nLines; i++) {
+        fputs(full_history_data+i*MAX_HISTORY_LINE_SIZE, history_file);
+      }
+
+      fclose(history_file);
+    }
+  }
+
+  free(full_history_data);
+  free(toDelete);
+
+  *numLines = nLinesCommands;
+  return history_data;
+}
+
 void renderScreen(char* input, int cursor, int selected, char* lines, bool* renderLine, int numLines, Match* matches, int nTokens) {
   clear();
 
@@ -279,6 +406,7 @@ int main(int argc, char** argv) {
 
   while(!runCommand) {
     bool inputChanged = false;
+    bool updateView = false;
     int c = getch();
     switch(c) {
       case KEY_BACKSPACE:
@@ -341,6 +469,18 @@ int main(int argc, char** argv) {
         runCommand = true;
         result = 11;
         break;
+      case 521: { // ^Del
+          int newNumLines = numLines;
+          char* tmp = deleteAndReload(input, selected, historyData, renderLine, &newNumLines);
+          if (tmp != NULL) {
+            free(historyData);
+            historyData = tmp;
+            numLines = newNumLines;
+            memset(renderLine, 0, numLines*sizeof(bool));
+            updateView = true;
+          }
+        }
+        break;
       case 3:  // ^C
       case 26: // ^Z
         runCommand = true;
@@ -361,12 +501,14 @@ int main(int argc, char** argv) {
         break;
     }
 
-    if (inputChanged) {
+    if (inputChanged || updateView) {
       if (matches != NULL) {
         free(matches);
         matches = NULL;
       }
-      selected = 0;
+      if (inputChanged) {
+        selected = 0;
+      }
       searchHistory(input, historyData, renderLine, numLines, &matches, &nTokens);
     }
 
