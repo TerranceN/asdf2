@@ -72,7 +72,9 @@ char* loadHistoryData(int* numLines) {
     {
       char line[MAX_HISTORY_LINE_SIZE];
       while(fgets((char*)(&line), MAX_HISTORY_LINE_SIZE*sizeof(char), history_file) != NULL) {
-        nLines += 1;
+        if (line[0] != '#') {
+          nLines += 1;
+        }
       }
     }
 
@@ -81,7 +83,9 @@ char* loadHistoryData(int* numLines) {
     {
       history_data = malloc(nLines*MAX_HISTORY_LINE_SIZE*sizeof(char));
       for (int i = 0; i < nLines; i++) {
-        fgets(history_data+i*MAX_HISTORY_LINE_SIZE, MAX_HISTORY_LINE_SIZE*sizeof(char), history_file);
+        do {
+          fgets(history_data+i*MAX_HISTORY_LINE_SIZE, MAX_HISTORY_LINE_SIZE*sizeof(char), history_file);
+        } while(history_data[i*MAX_HISTORY_LINE_SIZE] == '#');
       }
     }
 
