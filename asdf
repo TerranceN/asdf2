@@ -14,13 +14,16 @@ elif [[ -n $ZSH_VERSION ]]; then
     sourced=true
   fi
   shell="zsh"
+  echo "WARNING: This was made for bash."
+  echo "  Some things may not work."
 else
-  echo "WARNING: Unknown shell. This was made for bash and zsh."
+  echo "WARNING: Unknown shell. This was made for bash."
   echo "  It may not work for your shell."
 fi
 
 # command line switch defaults
 write=true
+ps1hack=false
 
 function _help() {
   echo "Usage: asdf [OPTION]"
@@ -35,7 +38,9 @@ function _help() {
   echo ""
   echo "Available options:"
   echo "  --write:[true|false]    Whether to write to HISTFILE when running a command."
-  echo "                          Default:true"
+  echo "                            Default:true"
+  echo "  --ps1hack:[true|false]  Whether to try to show the PS1 when editing a command."
+  echo "                            Default:false"
   echo "  --help                  Print this help text and exit."
 }
 
@@ -45,7 +50,13 @@ function _asdf_main() {
   if [ $asdf_status -ge 10 ]; then
     to_run=$results
     if [ $asdf_status -eq 11 ]; then
-      read -e -i "$results" to_run
+      if [[ $ps1hack == true ]]; then
+        # hack to render a user's PS1
+        expPS1=$(echo "HISTFILE=/dev/null PS1=\"$PS1@\" && cd `pwd`" | bash -i 2>&1 | grep "@exit$" | head -n 1 | sed 's/\(.*\)@exit$/\1/')
+        read -e -p "$expPS1" -i "$results" to_run
+      else
+        read -e -i "$results" to_run
+      fi
     fi
     if [[ "$to_run" != "" && "$to_run" ]]; then
       if [ $asdf_status -ne 11 ]; then
@@ -87,6 +98,9 @@ while [ "$1" != "" ]; do
     ;;
   --write:*)
     write=`echo $1 | sed 's/^--[^:]\+:\(.*\)$/\1/'`
+    ;;
+  --ps1hack:*)
+    ps1hack=`echo $1 | sed 's/^--[^:]\+:\(.*\)$/\1/'`
     ;;
   *)
     echo "Unknown argument, printing helptext and exiting..."
