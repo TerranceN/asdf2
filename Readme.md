@@ -37,6 +37,23 @@ Controls:
 
 - `<C-Space>` -> edit the selected command before running it
 
+#### Extras
+
+Not required, but adding the following to your `.bashrc` can make interacting with your history a little bit nicer:
+
+```bash
+# make history virtually unlimited
+export HISTSIZE=1000000
+export HISTFILESIZE=$HISTSIZE
+
+# make it so that asdf doesn't show up in the history
+export HISTIGNORE="$HISTIGNORE:asdf*"
+
+# append commands to the history as they're run (instead of after the shell exits)
+shopt -s histappend
+PROMPT_COMMAND="history -a;$PROMPT_COMMAND"
+```
+
 TODO:
 -----
 
