@@ -97,10 +97,10 @@ while [ "$1" != "" ]; do
     runasdf=false
     ;;
   --write:*)
-    write=`echo $1 | sed 's/^--[^:]\+:\(.*\)$/\1/'`
+    write=`echo $1 | sed 's/^--[^:]*:\(.*\)$/\1/'`
     ;;
   --ps1hack:*)
-    ps1hack=`echo $1 | sed 's/^--[^:]\+:\(.*\)$/\1/'`
+    ps1hack=`echo $1 | sed 's/^--[^:]*:\(.*\)$/\1/'`
     ;;
   *)
     echo "Unknown argument, printing helptext and exiting..."
