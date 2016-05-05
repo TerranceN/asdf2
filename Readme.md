@@ -24,6 +24,8 @@ Building
 
 - ncurses development headers/libraries (you need to do something like `sudo apt-get install ncurses-dev` on Ubuntu, or `brew install ncurses` on Mac, or install the `libncurses-devel` package on Windows/Cygwin)
 
+- bash 4 ([Mac install instructions](http://stackoverflow.com/a/16416694))
+
 - make
 
 You should be able to just run `make`, and it should build fine assuming you have ncurses installed.
@@ -41,7 +43,7 @@ Controls:
 
 - `<C-Space>` -> edit the selected command before running it
 
-- `<C-Del>` -> remove the selected command (and any copies) from your HISTFILE
+- `<C-Del>` (or `<C-\>` on Mac) -> remove the selected command (and any copies) from your HISTFILE
 
 #### Extras
 

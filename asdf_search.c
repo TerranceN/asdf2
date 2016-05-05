@@ -469,6 +469,7 @@ int main(int argc, char** argv) {
         runCommand = true;
         result = 11;
         break;
+      case 28: //  For macs
       case 521: { // ^Del
           int newNumLines = numLines;
           char* tmp = deleteAndReload(input, selected, historyData, renderLine, &newNumLines);
