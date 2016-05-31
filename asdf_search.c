@@ -21,7 +21,7 @@ typedef struct {
 } Match;
 
 const int MAX_SEARCH_SIZE = 150;
-const int MAX_HISTORY_LINE_SIZE=300;
+const int MAX_HISTORY_LINE_SIZE=3000;
 
 void outputCommand(char* fileName, char* command) {
   FILE* outputFile = fopen(fileName, "w");
