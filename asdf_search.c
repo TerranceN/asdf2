@@ -85,6 +85,18 @@ char* loadHistoryData(int* numLines) {
       for (int i = 0; i < nLines; i++) {
         do {
           fgets(history_data+i*MAX_HISTORY_LINE_SIZE, MAX_HISTORY_LINE_SIZE*sizeof(char), history_file);
+          if (history_data[i*MAX_HISTORY_LINE_SIZE] == ':') {
+            int semi = 0;
+            for (int j = 1; j < MAX_HISTORY_LINE_SIZE; j++) {
+              if (history_data[i*MAX_HISTORY_LINE_SIZE+j] == ';') {
+                semi = j;
+                break;
+              }
+            }
+            if (semi > 0) {
+              memmove(history_data+i*MAX_HISTORY_LINE_SIZE, history_data+i*MAX_HISTORY_LINE_SIZE+semi+1, MAX_HISTORY_LINE_SIZE*sizeof(char));
+            }
+          }
         } while(history_data[i*MAX_HISTORY_LINE_SIZE] == '#');
       }
     }
@@ -290,6 +302,18 @@ char* deleteAndReload(char* input, int selected, char* lines, bool* renderLine, 
             lineCount++;
             if (line[0] != '#') {
               memcpy(history_data+currentCommand*MAX_HISTORY_LINE_SIZE, &line, MAX_HISTORY_LINE_SIZE*sizeof(char));
+              if (history_data[currentCommand*MAX_HISTORY_LINE_SIZE] == ':') {
+                int semi = 0;
+                for (int j = 1; j < MAX_HISTORY_LINE_SIZE; j++) {
+                  if (history_data[currentCommand*MAX_HISTORY_LINE_SIZE+j] == ';') {
+                    semi = j;
+                    break;
+                  }
+                }
+                if (semi > 0) {
+                  memmove(history_data+currentCommand*MAX_HISTORY_LINE_SIZE, history_data+currentCommand*MAX_HISTORY_LINE_SIZE+semi+1, MAX_HISTORY_LINE_SIZE*sizeof(char));
+                }
+              }
               currentCommand++;
             }
           } else {

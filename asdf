@@ -3,29 +3,56 @@
 shell=unknown
 sourced=false
 current_dir=
+warnings=true
 
-if [[ -n $BASH_VERSION ]]; then
-  if [[ "${BASH_SOURCE}" != "$0" ]]; then
-    sourced=true
+_shellcheck() {
+  if [[ -n $BASH_VERSION ]]; then
+    if [[ "${BASH_SOURCE}" != "$0" ]]; then
+      sourced=true
+    fi
+    shell="bash"
+  elif [[ -n $ZSH_VERSION ]]; then
+    if [[ "${(%):-%x} != "$0"" ]]; then
+      sourced=true
+    fi
+    shell="zsh"
+  else
+    if [[ $warnings == true ]]; then
+      echo "WARNING: Unknown shell. This was made for bash/zsh."
+      echo "  It may not work for your shell."
+    fi
   fi
-  shell="bash"
-elif [[ -n $ZSH_VERSION ]]; then
-  if [[ "${(%):-%x} != "$0"" ]]; then
-    sourced=true
+
+  if [[ $sourced == true ]]; then
+    if [[ "$shell" =~ "bash" ]]; then
+      current_dir=`dirname ${BASH_SOURCE}`
+    elif [[ "$shell" =~ "zsh" ]]; then
+      current_dir=`dirname ${(%):-%x}`
+    fi
+  else
+    if [[ $warnings == true ]]; then
+      echo "WARNING: It seems like this is running as a script."
+      echo "  Some commands (like cd), and features (like adding to HISTFILE) won't work."
+      echo "  Source this script instead of just running it to resolve these issues."
+    fi
+    current_dir=`dirname $0`
   fi
-  shell="zsh"
-  echo "WARNING: This was made for bash."
-  echo "  Some things may not work."
-else
-  echo "WARNING: Unknown shell. This was made for bash."
-  echo "  It may not work for your shell."
-fi
+
+  if [[ ! -f "$HISTFILE" ]]; then
+      echo "ERROR: HISTFILE not found. Currently set to '$HISTFILE'"
+      echo "  Make sure it's set and exported. Ex. in your .bashrc/.zshrc"
+      echo "    try 'export HISTFILE=~/.eternal_history'"
+      return 1
+  fi
+
+  return 0
+}
 
 # command line switch defaults
 write=true
 ps1hack=false
 
-function _help() {
+_help() {
   echo "Usage: asdf [OPTION]"
   echo "Fast and flexible history searching and exploring."
   echo "Type a command to search your history for it."
@@ -39,23 +66,30 @@ function _help() {
   echo "Available options:"
   echo "  --write:[true|false]    Whether to write to HISTFILE when running a command."
   echo "                            Default:true"
+  echo "  --warnings:[true|false] Whether to display warnings."
+  echo "                            Default:true"
   echo "  --ps1hack:[true|false]  Whether to try to show the PS1 when editing a command."
   echo "                            Default:false"
   echo "  --help                  Print this help text and exit."
 }
 
-function _asdf_main() {
+_asdf_main() {
   results=`HISTFILE="$HISTFILE" ${current_dir}/asdf_search.exe`
   asdf_status=$?
   if [ $asdf_status -ge 10 ]; then
     to_run=$results
     if [ $asdf_status -eq 11 ]; then
-      if [[ $ps1hack == true ]]; then
-        # hack to render a user's PS1
-        expPS1=$(echo "HISTFILE=/dev/null PS1=\"$PS1@\" && cd `pwd`" | bash -i 2>&1 | grep "@exit$" | head -n 1 | sed 's/\(.*\)@exit$/\1/')
-        read -e -p "$expPS1" -i "$results" to_run
-      else
-        read -e -i "$results" to_run
+      if [[ $shell == "bash" ]]; then
+        if [[ $ps1hack == true ]]; then
+          # hack to render a user's PS1
+          expPS1=$(echo "HISTFILE=/dev/null PS1=\"$PS1@\" && cd `pwd`" | bash -i 2>&1 | grep "@exit$" | head -n 1 | sed 's/\(.*\)@exit$/\1/')
+          read -e -p "$expPS1" -i "$results" to_run
+        else
+          read -e -i "$results" to_run
+        fi
+      elif [[ $shell == "zsh" ]]; then
+        to_run=$results
+        vared to_run
       fi
     fi
     if [[ "$to_run" != "" && "$to_run" ]]; then
@@ -74,19 +108,6 @@ function _asdf_main() {
   fi
 }
 
-if [[ $sourced == true ]]; then
-  if [[ "$shell" =~ "bash" ]]; then
-    current_dir=`dirname ${BASH_SOURCE}`
-  elif [[ "$shell" =~ "zsh" ]]; then
-    current_dir=`dirname ${(%):-%x}`
-  fi
-else
-  echo "WARNING: It seems like this is running as a script."
-  echo "  Some commands (like cd), and features (like adding to HISTFILE) won't work."
-  echo "  Source this script instead of just running it to resolve these issues."
-  current_dir=`dirname $0`
-fi
-
 runasdf=true
 
 # process arguments
@@ -99,6 +120,9 @@ while [ "$1" != "" ]; do
   --write:*)
     write=`echo $1 | sed 's/^--[^:]*:\(.*\)$/\1/'`
     ;;
+  --warnings:*)
+    warnings=`echo $1 | sed 's/^--[^:]*:\(.*\)$/\1/'`
+    ;;
   --ps1hack:*)
     ps1hack=`echo $1 | sed 's/^--[^:]*:\(.*\)$/\1/'`
     ;;
@@ -110,6 +134,9 @@ while [ "$1" != "" ]; do
   shift
 done
 
-if [[ $runasdf == true ]]; then
-  _asdf_main
+if [[ "$runasdf" = true ]]; then
+  _shellcheck
+  if [[ $? == 0 ]]; then
+    _asdf_main
+  fi
 fi
